@@ -1,0 +1,94 @@
+#!/bin/bash
+
+PKGUTIL=/usr/sbin/pkgutil
+INSTALLER=/usr/sbin/installer
+RM=/bin/rm
+RMDIR=/bin/rmdir
+AWK=/usr/bin/awk
+
+function usage {
+	echo -e "pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg>]\n\t\t[--uninstall <pkg-name>]"
+}
+
+function list_pkgs {
+	$PKGUTIL --packages
+}
+
+function install_pkg {
+	$INSTALLER -pkginfo -package $1 &> /dev/null
+	if [ ! $? == 0 ]
+	then
+		echo "pkgmanager: $1 ist not a valid package"
+		exit 1
+	else
+		echo "pkgmanager: Innstalling $1"
+		$INSTALLER -package $1 -target LocalSystem &> /dev/null
+		if [ $? == 0 ]
+		then
+			echo "pkgmanager: Installation successful"
+		else
+			echo "pkgmanager: Error during installation"
+			exit 1
+		fi
+	fi
+}
+
+function uninstall_pkg {
+	# Check if the package is installed 
+	$PKGUTIL --pkg-info $1 &> /dev/null
+	if [ ! $? == 0 ]
+	then
+		echo "pkgmanager: Package $1 is not installed"
+		exit 1
+	else
+		echo "pkgmanager: Uninstalling $1"
+		FILES=`$PKGUTIL --only-files --files $1` 
+		DIRS=`$PKGUTIL --only-dirs --files $1`
+		DIRS=`echo $DIRS | $AWK '{ for (i=NF;i>=1;i--) { if(s){s=s" "$i}else{s=$i }}{print s;s=""}}'`
+		# Delete files
+		for FILE in $FILES
+		do
+			$RM /$FILE &> /dev/null
+			if [ $? == 0 ]
+			then
+				echo "pkgmanager: Removed file /$FILE"
+			fi
+		done
+		# Delete empty folders
+		for DIR in $DIRS
+		do
+			$RMDIR /$DIR &> /dev/null
+			if [ $? == 0 ]
+			then
+				echo "pkgmanager: Removed directory /$DIR"
+			fi
+		done
+		$PKGUTIL --forget $1 &> /dev/null
+		echo "pkgmanager: Uninstallation successful"
+	fi
+}
+
+if [ $# == 1 ]
+then
+	if [ $1 == "--help" ]
+	then
+		usage
+	elif [ $1 == "--list" ]
+	then
+		list_pkgs
+	else
+		usage
+	fi
+elif [ $# == 2 ]
+then
+	if [ $1 == "--install" ]
+	then
+		install_pkg $2
+	elif [ $1 == "--uninstall" ]
+	then
+		uninstall_pkg $2
+	fi
+else
+	usage
+fi
+
