@@ -28,7 +28,7 @@ function install_pkg {
 	else
 		echo "pkgmanager: Innstalling $1"
 		$INSTALLER -package $1 -target LocalSystem &> /dev/null
-		if [ $? == 0 ]
+		if [ $? -eq 0 ]
 		then
 			echo "pkgmanager: Installation successful"
 		else
@@ -41,7 +41,7 @@ function install_pkg {
 function uninstall_pkg {
 	# Check if the package is installed 
 	$PKGUTIL --pkg-info $1 &> /dev/null
-	if [ ! $? == 0 ]
+	if [ $? -ne 0 ]
 	then
 		echo "pkgmanager: Package $1 is not installed"
 		exit 1
@@ -58,7 +58,7 @@ function uninstall_pkg {
 		for FILE in $FILES
 		do
 			$RM /$FILE &> /dev/null
-			if [ $? == 0 ]
+			if [ $? -eq 0 ]
 			then
 				echo "pkgmanager: Removed file /$FILE"
 			fi
@@ -67,7 +67,7 @@ function uninstall_pkg {
 		for DIR in $DIRS
 		do
 			$RMDIR /$DIR &> /dev/null
-			if [ $? == 0 ]
+			if [ $? -eq 0 ]
 			then
 				echo "pkgmanager: Removed directory /$DIR"
 			fi
@@ -77,7 +77,7 @@ function uninstall_pkg {
 	fi
 }
 
-if [ $# == 1 ]
+if [ $# -eq 1 ]
 then
 	if [ $1 == "--help" ]
 	then
@@ -88,7 +88,7 @@ then
 	else
 		usage
 	fi
-elif [ $# == 2 ]
+elif [ $# -eq 2 ]
 then
 	if [ $1 == "--install" ]
 	then
