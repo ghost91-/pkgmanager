@@ -5,6 +5,7 @@ INSTALLER=/usr/sbin/installer
 RM=/bin/rm
 RMDIR=/bin/rmdir
 AWK=/usr/bin/awk
+ID=/usr/bin/id
 
 function usage {
 	echo -e "pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg>]\n\t\t[--uninstall <pkg-name>]"
@@ -16,9 +17,13 @@ function list_pkgs {
 
 function install_pkg {
 	$INSTALLER -pkginfo -package $1 &> /dev/null
-	if [ ! $? == 0 ]
+	if [ $? -ne 0 ]
 	then
 		echo "pkgmanager: $1 ist not a valid package"
+		exit 1
+	elif [ `$ID -u` -ne 0 ]
+	then
+		echo "pkgmanager: Needs to be run as root"
 		exit 1
 	else
 		echo "pkgmanager: Innstalling $1"
@@ -39,6 +44,10 @@ function uninstall_pkg {
 	if [ ! $? == 0 ]
 	then
 		echo "pkgmanager: Package $1 is not installed"
+		exit 1
+	elif [ `$ID -u` -ne 0 ]
+	then
+		echo "pkgmanager: Needs to be run as root"
 		exit 1
 	else
 		echo "pkgmanager: Uninstalling $1"
