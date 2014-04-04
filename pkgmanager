@@ -63,7 +63,7 @@ function uninstall_pkg {
 				echo "pkgmanager: Removed file /$FILE"
 			fi
 		done
-		# Delete empty folders
+		# Delete empty directories
 		for DIR in $DIRS
 		do
 			$RMDIR /$DIR &> /dev/null
