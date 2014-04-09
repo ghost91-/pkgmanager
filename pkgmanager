@@ -6,9 +6,12 @@ RM=/bin/rm
 RMDIR=/bin/rmdir
 AWK=/usr/bin/awk
 ID=/usr/bin/id
+CUT=/usr/bin/cut
+ECHO=/bin/echo
+GREP=/usr/bin/grep
 
 function usage {
-	echo -e "pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg>]\n\t\t[--uninstall <pkg-name>]"
+	$ECHO -e "pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg>]\n\t\t[--uninstall <pkg-name>]"
 }
 
 function list_pkgs {
@@ -19,20 +22,20 @@ function install_pkg {
 	$INSTALLER -pkginfo -package $1 &> /dev/null
 	if [ $? -ne 0 ]
 	then
-		echo "pkgmanager: $1 ist not a valid package"
+		$ECHO "pkgmanager: $1 ist not a valid package"
 		exit 1
 	elif [ `$ID -u` -ne 0 ]
 	then
-		echo "pkgmanager: Needs to be run as root"
+		$ECHO "pkgmanager: Needs to be run as root"
 		exit 1
 	else
-		echo "pkgmanager: Innstalling $1"
+		$ECHO "pkgmanager: Innstalling $1"
 		$INSTALLER -package $1 -target LocalSystem &> /dev/null
 		if [ $? -eq 0 ]
 		then
-			echo "pkgmanager: Installation successful"
+			$ECHO "pkgmanager: Installation successful"
 		else
-			echo "pkgmanager: Error during installation"
+			$ECHO "pkgmanager: Error during installation"
 			exit 1
 		fi
 	fi
@@ -43,37 +46,43 @@ function uninstall_pkg {
 	$PKGUTIL --pkg-info $1 &> /dev/null
 	if [ $? -ne 0 ]
 	then
-		echo "pkgmanager: Package $1 is not installed"
+		$ECHO "pkgmanager: Package $1 is not installed"
 		exit 1
 	elif [ `$ID -u` -ne 0 ]
 	then
-		echo "pkgmanager: Needs to be run as root"
+		$ECHO "pkgmanager: Needs to be run as root"
 		exit 1
 	else
-		echo "pkgmanager: Uninstalling $1"
+		$ECHO "pkgmanager: Uninstalling $1"
+		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $AWK '{print $2}'`
+		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $AWK '{print $2}'`
+		if [ "$LOCATION" != "" ]
+		then
+			LOCATION=$LOCATION/
+		fi
 		FILES=`$PKGUTIL --only-files --files $1` 
 		DIRS=`$PKGUTIL --only-dirs --files $1`
-		DIRS=`echo $DIRS | $AWK '{ for (i=NF;i>=1;i--) { if(s){s=s" "$i}else{s=$i }}{print s;s=""}}'`
+		DIRS=`$ECHO $DIRS | $AWK '{ for (i=NF;i>=1;i--) { if(s){s=s" "$i}else{s=$i }}{print s;s=""}}'`
 		# Delete files
 		for FILE in $FILES
 		do
-			$RM /$FILE &> /dev/null
+			$RM $VOLUME$LOCATION$FILE &> /dev/null
 			if [ $? -eq 0 ]
 			then
-				echo "pkgmanager: Removed file /$FILE"
+				$ECHO "pkgmanager: Removed file $VOLUME$LOCATION$FILE"
 			fi
 		done
 		# Delete empty directories
 		for DIR in $DIRS
 		do
-			$RMDIR /$DIR &> /dev/null
+			$RMDIR $VOLUME$LOCATION$DIR &> /dev/null
 			if [ $? -eq 0 ]
 			then
-				echo "pkgmanager: Removed directory /$DIR"
+				$ECHO "pkgmanager: Removed directory $VOLUME$LOCATION$DIR"
 			fi
 		done
 		$PKGUTIL --forget $1 &> /dev/null
-		echo "pkgmanager: Uninstallation successful"
+		$ECHO "pkgmanager: Uninstallation successful"
 	fi
 }
 
@@ -88,14 +97,22 @@ then
 	else
 		usage
 	fi
-elif [ $# -eq 2 ]
+elif [ $# -gt 1 ]
 then
+	ARGS=$@
+	PKGS=${ARGS#* }
 	if [ $1 == "--install" ]
 	then
-		install_pkg $2
+		for PKG in $PKGS
+		do
+			install_pkg $PKG
+		done
 	elif [ $1 == "--uninstall" ]
 	then
-		uninstall_pkg $2
+		for PKG in $PKGS
+		do
+			uninstall_pkg $PKG
+		done
 	fi
 else
 	usage
