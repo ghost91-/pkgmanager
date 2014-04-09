@@ -11,7 +11,7 @@ ECHO=/bin/echo
 GREP=/usr/bin/grep
 
 function usage {
-	$ECHO $'pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg>]\n\t\t[--uninstall <pkg-name>]'
+	$ECHO $'pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg> [<path-to-pkg>...]]\n\t\t[--uninstall <pkg-id> [<pkg-id>...]]'
 }
 
 function list_pkgs {
