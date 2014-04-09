@@ -113,6 +113,8 @@ then
 		do
 			uninstall_pkg $PKG
 		done
+	else
+		usage
 	fi
 else
 	usage
