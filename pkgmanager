@@ -56,7 +56,7 @@ function uninstall_pkg {
 		$ECHO "pkgmanager: Uninstalling $1"
 		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $AWK '{print $2}'`
 		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $AWK '{print $2}'`
-		
+
 		if [ "$LOCATION" != "" ]
 		then
 			case "$LOCATION" in
