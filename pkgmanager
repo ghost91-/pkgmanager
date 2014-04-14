@@ -56,10 +56,18 @@ function uninstall_pkg {
 		$ECHO "pkgmanager: Uninstalling $1"
 		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $AWK '{print $2}'`
 		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $AWK '{print $2}'`
+		
 		if [ "$LOCATION" != "" ]
 		then
-			LOCATION=$LOCATION/
+			case "$LOCATION" in
+			*/)
+				;;
+			*)
+				LOCATION=$LOCATION/
+				;;
+			esac
 		fi
+
 		FILES=`$PKGUTIL --only-files --files $1` 
 		DIRS=`$PKGUTIL --only-dirs --files $1`
 		DIRS=`$ECHO $DIRS | $AWK '{ for (i=NF;i>=1;i--) { if(s){s=s" "$i}else{s=$i }}{print s;s=""}}'`
