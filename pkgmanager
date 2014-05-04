@@ -57,6 +57,7 @@ function uninstall_pkg {
 		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $SED 's/^.\{8\}//g'`
 		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $SED 's/^.\{10\}//g'`
 
+		# Make sure that slashes in $VOLUME and $LOCATION are set correctly
 		if [[ $VOLUME != */ ]]
 		then
 			VOLUME=$VOLUME/
@@ -81,32 +82,44 @@ function uninstall_pkg {
 		IFS=`$ECHO $'\n\b'`
 		FILES=`$PKGUTIL --only-files --files $1` 
 		DIRS=( `$PKGUTIL --only-dirs --files $1` )
+
+		# Check if all files are present
+		for FILE in $FILES
+		do
+			if [ ! -f "$VOLUME$LOCATION$FILE" ]
+			then
+				$ECHO "pkgmanager: File $VOLUME$LOCATION$FILE does not exist, abborting"
+				exit 1
+			fi
+		done
+
+		# Check if all directories are present
+		for (( idx=${#DIRS[@]}-1 ; idx>=0 ; idx-- ))
+		do
+			if [ ! -d "$VOLUME$LOCATION${DIRS[idx]}" ]
+			then
+				$ECHO "pkgmanager: Directory $VOLUME$LOCATION${DIRS[idx]} does not exist, abborting"
+				exit 1
+			fi
+		done
+
 		# Delete files
 		for FILE in $FILES
 		do
-			if [ -f "$VOLUME$LOCATION$FILE" ]
+			$RM $VOLUME$LOCATION$FILE &> /dev/null
+			if [ $? -eq 0 ]
 			then
-				$RM $VOLUME$LOCATION$FILE &> /dev/null
-				if [ $? -eq 0 ]
-				then
-					$ECHO "pkgmanager: Removed file $VOLUME$LOCATION$FILE"
-				fi
-			else
-				$ECHO "pkgmanager: File $VOLUME$LOCATION$FILE does not exist"
+				$ECHO "pkgmanager: Removed file $VOLUME$LOCATION$FILE"
 			fi
 		done
+
 		# Delete empty directories
 		for (( idx=${#DIRS[@]}-1 ; idx>=0 ; idx-- ))
 		do
-			if [ -d "$VOLUME$LOCATION${DIRS[idx]}" ]
+			$RMDIR $VOLUME$LOCATION${DIRS[idx]} &> /dev/null
+			if [ $? -eq 0 ]
 			then
-				$RMDIR $VOLUME$LOCATION${DIRS[idx]} &> /dev/null
-				if [ $? -eq 0 ]
-				then
-					$ECHO "pkgmanager: Removed directory $VOLUME$LOCATION${DIRS[idx]}"
-				fi
-			else
-				$ECHO "pkgmanager: Directory $VOLUME$LOCATION${DIRS[idx]} does not exist"
+				$ECHO "pkgmanager: Removed directory $VOLUME$LOCATION${DIRS[idx]}"
 			fi
 		done
 		IFS=$SAVEIFS
