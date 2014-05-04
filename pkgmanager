@@ -4,7 +4,7 @@ PKGUTIL=/usr/sbin/pkgutil
 INSTALLER=/usr/sbin/installer
 RM=/bin/rm
 RMDIR=/bin/rmdir
-AWK=/usr/bin/awk
+SED=/usr/bin/sed
 ID=/usr/bin/id
 CUT=/usr/bin/cut
 ECHO=/bin/echo
@@ -54,26 +54,29 @@ function uninstall_pkg {
 		exit 1
 	else
 		$ECHO "pkgmanager: Uninstalling $1"
-		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $AWK '{print $2}'`
-		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $AWK '{print $2}'`
+		VOLUME=`$PKGUTIL --pkg-info $1 | $GREP volume: | $SED 's/^.\{8\}//g'`
+		LOCATION=`$PKGUTIL --pkg-info $1 | $GREP location: | $SED 's/^.\{10\}//g'`
 
+		if [[ $VOLUME != */ ]]
+		then
+			VOLUME=$VOLUME/
+		fi
+		if [[ $VOLUME != /* ]]
+		then
+			VOLUME=/$VOLUME
+		fi
 		if [ "$LOCATION" != "" ]
 		then
-			case "$LOCATION" in
-			*/)
-				;;
-			*)
-				LOCATION=$LOCATION/
-				;;
-			esac
-
-			if [ "$LOCATION" == "/" ]
+			if [[ $LOCATION != */ ]]
 			then
-				LOCATION=""
+				LOCATION=$LOCATION/
+			fi
+			if [[ $LOCATION == /* ]]
+			then
+				LOCATION="${LOCATION:1:${#LOCATION}-1}"
 			fi
 		fi
 
-		echo $VOLUME$LOCATION
 		SAVEIFS=$IFS
 		IFS=`$ECHO $'\n\b'`
 		FILES=`$PKGUTIL --only-files --files $1` 
@@ -81,19 +84,29 @@ function uninstall_pkg {
 		# Delete files
 		for FILE in $FILES
 		do
-			$RM $VOLUME$LOCATION$FILE &> /dev/null
-			if [ $? -eq 0 ]
+			if [ -f "$VOLUME$LOCATION$FILE" ]
 			then
-				$ECHO "pkgmanager: Removed file $VOLUME$LOCATION$FILE"
+				$RM $VOLUME$LOCATION$FILE &> /dev/null
+				if [ $? -eq 0 ]
+				then
+					$ECHO "pkgmanager: Removed file $VOLUME$LOCATION$FILE"
+				fi
+			else
+				$ECHO "pkgmanager: File $VOLUME$LOCATION$FILE does not exist"
 			fi
 		done
 		# Delete empty directories
 		for (( idx=${#DIRS[@]}-1 ; idx>=0 ; idx-- ))
 		do
-			$RMDIR $VOLUME$LOCATION${DIRS[idx]} &> /dev/null
-			if [ $? -eq 0 ]
+			if [ -d "$VOLUME$LOCATION${DIRS[idx]}" ]
 			then
-				$ECHO "pkgmanager: Removed directory $VOLUME$LOCATION${DIRS[idx]}"
+				$RMDIR $VOLUME$LOCATION${DIRS[idx]} &> /dev/null
+				if [ $? -eq 0 ]
+				then
+					$ECHO "pkgmanager: Removed directory $VOLUME$LOCATION${DIRS[idx]}"
+				fi
+			else
+				$ECHO "pkgmanager: Directory $VOLUME$LOCATION${DIRS[idx]} does not exist"
 			fi
 		done
 		IFS=$SAVEIFS
