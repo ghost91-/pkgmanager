@@ -11,7 +11,7 @@ ECHO=/bin/echo
 GREP=/usr/bin/grep
 
 function usage {
-	$ECHO $'pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--install <path-to-pkg> [<path-to-pkg>...]]\n\t\t[--uninstall <pkg-id> [<pkg-id>...]]'
+	$ECHO $'pkgmanager usage: pkgmanager\n\t\t[--help]\n\t\t[--list]\n\t\t[--info <pkg-id>]\n\t\t[--install <path-to-pkg> [<path-to-pkg>...]]\n\t\t[--uninstall <pkg-id> [<pkg-id>...]]'
 }
 
 function list_pkgs {
@@ -66,8 +66,14 @@ function uninstall_pkg {
 				LOCATION=$LOCATION/
 				;;
 			esac
+
+			if [ "$LOCATION" == "/" ]
+			then
+				LOCATION=""
+			fi
 		fi
 
+		echo $VOLUME$LOCATION
 		SAVEIFS=$IFS
 		IFS=`$ECHO $'\n\b'`
 		FILES=`$PKGUTIL --only-files --files $1` 
@@ -82,7 +88,7 @@ function uninstall_pkg {
 			fi
 		done
 		# Delete empty directories
-		for (( idx=${#DIRS[@]}-1 ; idx>=0 ; idx-- ))
+		for (( idx=${DIRS[@]}-1 ; idx>=0 ; idx-- ))
 		do
 			$RMDIR $VOLUME$LOCATION${DIRS[idx]} &> /dev/null
 			if [ $? -eq 0 ]
@@ -94,6 +100,10 @@ function uninstall_pkg {
 		$PKGUTIL --forget $1 &> /dev/null
 		$ECHO "pkgmanager: Uninstallation successful"
 	fi
+}
+
+function info_pkg {
+	$PKGUTIL --info $1
 }
 
 if [ $# -eq 1 ]
@@ -123,6 +133,9 @@ then
 		do
 			uninstall_pkg $PKG
 		done
+	elif [ $1 == "--info" ] && [ $# -eq 2 ]
+	then
+		info_pkg $2
 	else
 		usage
 	fi
