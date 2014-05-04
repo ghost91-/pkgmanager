@@ -6,7 +6,6 @@ RM=/bin/rm
 RMDIR=/bin/rmdir
 SED=/usr/bin/sed
 ID=/usr/bin/id
-CUT=/usr/bin/cut
 ECHO=/bin/echo
 GREP=/usr/bin/grep
 
